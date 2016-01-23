@@ -1,0 +1,24 @@
+name: drudge
+version: 0.0.1
+author: Daniel Davidson <dbdavidson@yahoo.com>
+dependencies:
+
+# custom <drudge dependencies>
+# end <drudge dependencies>
+
+dev_dependencies:
+  yaml: "any"
+  browser: "any"
+
+# custom <drudge dev dependencies>
+# end <drudge dev dependencies>
+
+dependency_overrides:
+# custom <drudge dependency overrides>
+# end <drudge dependency overrides>
+
+transformers:
+
+# custom <drudge transformers>
+# end <drudge transformers>
+
