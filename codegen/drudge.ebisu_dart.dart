@@ -19,6 +19,10 @@ main(List<String> args) {
 
   final drudge = system('drudge')
     ..rootPath = dirname(dirname(absolute(Platform.script.toFilePath())))
+    ..includesHop = true
+    ..testLibraries = [
+      library('test_command_spec')
+    ]
     ..libraries = [
       library('drudge')
       ..classes = [

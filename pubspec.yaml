@@ -9,6 +9,8 @@ dependencies:
 dev_dependencies:
   yaml: "any"
   browser: "any"
+  hop: "any"
+  hop_docgen: "any"
 
 # custom <drudge dev dependencies>
 # end <drudge dev dependencies>
