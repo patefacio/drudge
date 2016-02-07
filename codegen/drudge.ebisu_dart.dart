@@ -5,13 +5,14 @@ import 'package:ebisu/ebisu.dart';
 import 'package:ebisu/ebisu_dart_meta.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
+
 // custom <additional imports>
 // end <additional imports>
 final _logger = new Logger('drudgeEbisuDart');
 
 main(List<String> args) {
-  Logger.root.onRecord.listen((LogRecord r) =>
-      print("${r.loggerName} [${r.level}]:\t${r.message}"));
+  Logger.root.onRecord.listen(
+      (LogRecord r) => print("${r.loggerName} [${r.level}]:\t${r.message}"));
   Logger.root.level = Level.OFF;
   useDartFormatter = true;
   String here = absolute(Platform.script.toFilePath());
@@ -21,36 +22,60 @@ main(List<String> args) {
     ..rootPath = dirname(dirname(absolute(Platform.script.toFilePath())))
     ..includesHop = true
     ..testLibraries = [
-      library('test_command_spec')
+      library('test_driver')
+        ..imports = ['package:id/id.dart', 'package:drudge/drudge.dart']
     ]
     ..libraries = [
       library('drudge')
-      ..classes = [
-        class_('fse_bundle')
-        ..doc = 'Groups files and directories to watch for events'
-        ..members = [
-          member('file_system_entities')..type = 'List<FileSystemEntity>'..classInit = [],
-        ],
-
-        class_('command_spec')
-        ..doc = 'Specifies a command to run'
-        ..members = [
-
-        ],
-
-        class_('command_set')
-        ..doc = 'Groups commands to run when any fse in a bundle changes'
-        ..members = [
-          member('command_mapping')..type = 'Map<FseBundle, CommandSpec>'..classInit = {}
-        ],
-
-        class_('driver')
-        ..doc = '''
-Given a set of files, directories and commands, sets up watchers and commands'''
-        ..members = [
-
+        ..imports = [
+          'package:id/id.dart',
+          'package:ebisu/ebisu.dart',
         ]
-      ]
+        ..enums = [
+          enum_('logging_policy')
+            ..values = ['command_start', 'command_completion', 'command_all',],
+          enum_('parallel_policy')
+            ..values = ['serial', 'parallel', 'parallel_constrained'],
+          enum_('interrupt_policy')
+            ..values = ['restart_command', 'queue_command',]
+        ]
+        ..classes = [
+          /// Dependency
+          class_('dependencies')
+            ..doc = 'Reference to runnable that must be run before another'
+            ..members = [],
+
+          /// Identifiable
+          class_('identifiable')..members = [member('id')..type = 'Id',],
+
+          /// Runnable
+          class_('runnable')..isAbstract = true,
+
+          /// Command
+          class_('command')
+            ..implement = ['Runnable']
+            ..mixins = ['Identifiable', 'Dependencies']
+            ..members = [
+              member('command_line'),
+              member('exe'),
+              member('args'),
+            ],
+
+          /// Recipe
+          class_('recipe')
+            ..implement = ['Runnable']
+            ..mixins = ['Identifiable', 'Dependencies']
+            ..members = [
+              member('runnables')
+                ..type = 'List<Runnable>'
+                ..classInit = [],
+              member('parallel_policy')..type = 'ParallelPolicy',
+            ],
+
+          /// Drive the commands
+          class_('driver')
+            ..members = [member('runnables')..type = 'List<Runnable>',]
+        ]
     ];
 
   drudge.generate();

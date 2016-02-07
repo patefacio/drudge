@@ -4,6 +4,10 @@ author: Daniel Davidson <dbdavidson@yahoo.com>
 dependencies:
 
 # custom <drudge dependencies>
+
+  id: "^1.0.13"
+  ebisu: "^0.6.14"  
+
 # end <drudge dependencies>
 
 dev_dependencies:
@@ -13,6 +17,8 @@ dev_dependencies:
   hop_docgen: "any"
 
 # custom <drudge dev dependencies>
+  test: "^0.12.0"
+
 # end <drudge dev dependencies>
 
 dependency_overrides:

@@ -1,5 +1,5 @@
 import 'package:logging/logging.dart';
-import 'test_command_spec.dart' as test_command_spec;
+import 'test_driver.dart' as test_driver;
 
 main() {
   Logger.root.level = Level.OFF;
@@ -7,5 +7,5 @@ main() {
     print('${rec.level.name}: ${rec.time}: ${rec.message}');
   });
 
-  test_command_spec.main();
+  test_driver.main();
 }
