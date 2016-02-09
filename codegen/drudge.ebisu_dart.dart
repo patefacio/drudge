@@ -27,10 +27,7 @@ main(List<String> args) {
     ]
     ..libraries = [
       library('drudge')
-        ..imports = [
-          'package:id/id.dart',
-          'package:ebisu/ebisu.dart',
-        ]
+        ..imports = ['package:id/id.dart', 'package:ebisu/ebisu.dart', 'io']
         ..enums = [
           enum_('logging_policy')
             ..values = ['command_start', 'command_completion', 'command_all',],
@@ -43,7 +40,11 @@ main(List<String> args) {
           /// Dependency
           class_('dependencies')
             ..doc = 'Reference to runnable that must be run before another'
-            ..members = [],
+            ..members = [
+              member('dependencies')
+                ..type = 'List<Runnable>'
+                ..classInit = [],
+            ],
 
           /// Identifiable
           class_('identifiable')..members = [member('id')..type = 'Id',],
@@ -55,11 +56,7 @@ main(List<String> args) {
           class_('command')
             ..implement = ['Runnable']
             ..mixins = ['Identifiable', 'Dependencies']
-            ..members = [
-              member('command_line'),
-              member('exe'),
-              member('args'),
-            ],
+            ..members = [member('command_line'),],
 
           /// Recipe
           class_('recipe')
@@ -72,9 +69,32 @@ main(List<String> args) {
               member('parallel_policy')..type = 'ParallelPolicy',
             ],
 
+          class_('change_spec')
+            ..members = [
+              member('file_system_event')..type = 'int',
+              member('watch_targets')
+                ..type = 'List<FileSystemEntity>'
+                ..classInit = []
+                ..access = RO,
+            ],
+
+          class_('file_system_event_runner')
+            ..doc = 'Runs commands on file system events'
+            ..mixins = ['Identifiable', 'Dependencies']
+            ..members = [
+              member('change_spec')..type = 'ChangeSpec',
+              member('recipe')..type = 'Recipe',
+            ],
+
           /// Drive the commands
           class_('driver')
-            ..members = [member('runnables')..type = 'List<Runnable>',]
+            ..implement = ['Runnable']
+            ..members = [
+              member('file_system_event_runners')
+                ..type = 'List<FileSystemEventRunner>'
+                ..classInit = []
+                ..access = RO,
+            ]
         ]
     ];
 

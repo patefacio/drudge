@@ -6,6 +6,9 @@ import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 // custom <additional imports>
+
+import 'dart:io';
+
 // end <additional imports>
 
 final _logger = new Logger('test_driver');
@@ -20,9 +23,16 @@ main([List<String> args]) {
 // custom <main>
 
   test('sample driver', () {
-    var r = recipe('build_and_test', [command('build'), command('test'),]);
+    var first = command('clean');
 
-    print(r);
+    var r = recipe('build_and_test', [
+      command('build')..dependencies = [first],
+      command('test'),
+    ]);
+
+    var d = driver([fileSystemEventRunner(changeSpec(FileSystemEvent.ALL), r)]);
+
+    print(d);
   });
 
 // end <main>
