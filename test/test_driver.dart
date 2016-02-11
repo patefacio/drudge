@@ -22,17 +22,21 @@ main([List<String> args]) {
   Logger.root.level = Level.OFF;
 // custom <main>
 
+  Logger.root.level = Level.INFO;
   test('sample driver', () {
-    var first = command('clean');
+    var clean = command('clean');
 
-    var r = recipe('build_and_test', [
-      command('build')..dependencies = [first],
+    var buildAndTest = recipe('build_and_test', [
+      command('build')..dependencies = [clean],
       command('test'),
     ]);
 
-    var d = driver([fileSystemEventRunner(changeSpec(FileSystemEvent.ALL), r)]);
+    var fauxBuild = driver(
+        [fileSystemEventRunner(changeSpec(FileSystemEvent.ALL), buildAndTest)]);
 
-    print(d);
+    print(fauxBuild);
+
+    fauxBuild.run();
   });
 
 // end <main>

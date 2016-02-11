@@ -27,6 +27,7 @@ main(List<String> args) {
     ]
     ..libraries = [
       library('drudge')
+        ..includesLogger = true
         ..imports = ['package:id/id.dart', 'package:ebisu/ebisu.dart', 'io']
         ..enums = [
           enum_('logging_policy')
@@ -50,18 +51,16 @@ main(List<String> args) {
           class_('identifiable')..members = [member('id')..type = 'Id',],
 
           /// Runnable
-          class_('runnable')..isAbstract = true,
+          class_('runnable')..mixins = ['Dependencies', 'Identifiable'],
 
           /// Command
           class_('command')
-            ..implement = ['Runnable']
-            ..mixins = ['Identifiable', 'Dependencies']
+            ..extend = 'Runnable'
             ..members = [member('command_line'),],
 
           /// Recipe
           class_('recipe')
-            ..implement = ['Runnable']
-            ..mixins = ['Identifiable', 'Dependencies']
+            ..extend = 'Runnable'
             ..members = [
               member('runnables')
                 ..type = 'List<Runnable>'
@@ -80,7 +79,7 @@ main(List<String> args) {
 
           class_('file_system_event_runner')
             ..doc = 'Runs commands on file system events'
-            ..mixins = ['Identifiable', 'Dependencies']
+            ..extend = 'Runnable'
             ..members = [
               member('change_spec')..type = 'ChangeSpec',
               member('recipe')..type = 'Recipe',
@@ -88,7 +87,7 @@ main(List<String> args) {
 
           /// Drive the commands
           class_('driver')
-            ..implement = ['Runnable']
+            ..extend = 'Runnable'
             ..members = [
               member('file_system_event_runners')
                 ..type = 'List<FileSystemEventRunner>'

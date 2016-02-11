@@ -3,9 +3,12 @@ library drudge.drudge;
 import 'dart:io';
 import 'package:ebisu/ebisu.dart';
 import 'package:id/id.dart';
+import 'package:logging/logging.dart';
 
 // custom <additional imports>
 // end <additional imports>
+
+final _logger = new Logger('drudge');
 
 enum LoggingPolicy { commandStart, commandCompletion, commandAll }
 
@@ -30,18 +33,22 @@ class Identifiable {
 
 }
 
-abstract class Runnable {
+class Runnable extends Object with Dependencies, Identifiable {
   // custom <class Runnable>
 
-  run();
+  run() {
+    for (var dependency in dependencies) {
+      dependency.run();
+    }
+    _logger.info(
+        'Running $runtimeType($id) with deps ${dependencies.map((d) => d.id)}');
+  }
 
   // end <class Runnable>
 
 }
 
-class Command extends Object
-    with Identifiable, Dependencies
-    implements Runnable {
+class Command extends Runnable {
   String commandLine;
 
   // custom <class Command>
@@ -57,13 +64,16 @@ class Command extends Object
             : brCompact(['dependencies', indentBlock(brCompact(dependencies))])
       ]);
 
+  run() {
+    super.run();
+    if(commandLine != null) _logger.info('running command($commandLine)');
+  }
+
   // end <class Command>
 
 }
 
-class Recipe extends Object
-    with Identifiable, Dependencies
-    implements Runnable {
+class Recipe extends Runnable {
   List<Runnable> runnables = [];
   ParallelPolicy parallelPolicy;
 
@@ -75,12 +85,19 @@ class Recipe extends Object
   }
 
   toString() => brCompact([
-        'recipe(id)',
+        'recipe($id)',
         indentBlock(brCompact([runnables, 'parallelPolicy($parallelPolicy)',])),
         dependencies.isEmpty
             ? null
             : brCompact(['dependencies', indentBlock(brCompact(dependencies))])
       ]);
+
+  run() {
+    super.run();
+    for (var runnable in runnables) {
+      runnable.run();
+    }
+  }
 
   // end <class Recipe>
 
@@ -108,7 +125,7 @@ class ChangeSpec {
 }
 
 /// Runs commands on file system events
-class FileSystemEventRunner extends Object with Identifiable, Dependencies {
+class FileSystemEventRunner extends Runnable {
   ChangeSpec changeSpec;
   Recipe recipe;
 
@@ -122,11 +139,16 @@ class FileSystemEventRunner extends Object with Identifiable, Dependencies {
         indentBlock(recipe.toString())
       ]);
 
+  run() {
+    super.run();
+    recipe.run();
+  }
+
   // end <class FileSystemEventRunner>
 
 }
 
-class Driver implements Runnable {
+class Driver extends Runnable {
   List<FileSystemEventRunner> get fileSystemEventRunners =>
       _fileSystemEventRunners;
 
@@ -136,6 +158,13 @@ class Driver implements Runnable {
 
   toString() =>
       brCompact(['driver', indentBlock(brCompact(_fileSystemEventRunners))]);
+
+  run() {
+    super.run();
+    for (var fileSystemEventRunner in fileSystemEventRunners) {
+      fileSystemEventRunner.run();
+    }
+  }
 
   // end <class Driver>
 
