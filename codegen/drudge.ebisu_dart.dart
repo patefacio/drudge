@@ -26,6 +26,7 @@ main(List<String> args) {
         ..imports = [
           'package:id/id.dart',
           'package:drudge/drudge.dart',
+          'package:path/path.dart',
         ]
     ]
     ..libraries = [
@@ -95,6 +96,7 @@ main(List<String> args) {
             ..members = [
               member('change_spec')..type = 'ChangeSpec',
               member('recipe')..type = 'Recipe',
+              member('event_streams')..type = 'List<Stream<FileSystemEvent>>'..classInit = [],
             ],
 
           /// Drive the commands
