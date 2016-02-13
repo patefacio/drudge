@@ -23,12 +23,21 @@ main(List<String> args) {
     ..includesHop = true
     ..testLibraries = [
       library('test_driver')
-        ..imports = ['package:id/id.dart', 'package:drudge/drudge.dart']
+        ..imports = [
+          'package:id/id.dart',
+          'package:drudge/drudge.dart',
+        ]
     ]
     ..libraries = [
       library('drudge')
         ..includesLogger = true
-        ..imports = ['package:id/id.dart', 'package:ebisu/ebisu.dart', 'io']
+        ..imports = [
+          'package:id/id.dart',
+          'package:ebisu/ebisu.dart',
+          'package:quiver/iterables.dart',
+          'io',
+          'async',
+        ]
         ..enums = [
           enum_('logging_policy')
             ..values = ['command_start', 'command_completion', 'command_all',],
@@ -56,7 +65,10 @@ main(List<String> args) {
           /// Command
           class_('command')
             ..extend = 'Runnable'
-            ..members = [member('command_line'),],
+            ..members = [
+              member('exe'),
+              member('args')..type = 'List<String>'..classInit = [],
+            ],
 
           /// Recipe
           class_('recipe')

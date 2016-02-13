@@ -1,9 +1,11 @@
 library drudge.drudge;
 
+import 'dart:async';
 import 'dart:io';
 import 'package:ebisu/ebisu.dart';
 import 'package:id/id.dart';
 import 'package:logging/logging.dart';
+import 'package:quiver/iterables.dart';
 
 // custom <additional imports>
 // end <additional imports>
@@ -36,12 +38,14 @@ class Identifiable {
 class Runnable extends Object with Dependencies, Identifiable {
   // custom <class Runnable>
 
-  run() {
-    for (var dependency in dependencies) {
-      dependency.run();
-    }
-    _logger.info(
-        'Running $runtimeType($id) with deps ${dependencies.map((d) => d.id)}');
+  Future<List> run() async {
+    return Future
+        .wait(dependencies.map((d) => d.run()))
+        .then((Iterable results) {
+      _logger.info(
+          "DEPS($id) complete (${dependencies.length}:${results.length}) (${id.snake}:${runtimeType})");
+      return concat(results);
+    });
   }
 
   // end <class Runnable>
@@ -49,11 +53,12 @@ class Runnable extends Object with Dependencies, Identifiable {
 }
 
 class Command extends Runnable {
-  String commandLine;
+  String exe;
+  List<String> args = [];
 
   // custom <class Command>
 
-  Command(id) {
+  Command(id, [this.exe, this.args = const <String>[]]) {
     this.id = getOrCreateId(id);
   }
 
@@ -64,10 +69,13 @@ class Command extends Runnable {
             : brCompact(['dependencies', indentBlock(brCompact(dependencies))])
       ]);
 
-  run() {
-    super.run();
-    if(commandLine != null) _logger.info('running command($commandLine)');
-  }
+  Future run() async => super.run().then((Iterable results) {
+        _logger.info('COMMAND: ($exe ${args.join(" ")})');
+
+        return Process.run(exe, args).then((ProcessResult processResult) {
+          return new List.from(results)..add(processResult);
+        });
+      });
 
   // end <class Command>
 
@@ -92,12 +100,14 @@ class Recipe extends Runnable {
             : brCompact(['dependencies', indentBlock(brCompact(dependencies))])
       ]);
 
-  run() {
-    super.run();
-    for (var runnable in runnables) {
-      runnable.run();
-    }
-  }
+  Future run() async => super.run().then((Iterable results) {
+        return Future
+            .wait(runnables.map((var _) => _.run()))
+            .then((Iterable moreResults) {
+          _logger.fine('RECIPE($id) ${moreResults.length} complete');
+          return concat([results, concat(moreResults)]);
+        });
+      });
 
   // end <class Recipe>
 
@@ -131,7 +141,9 @@ class FileSystemEventRunner extends Runnable {
 
   // custom <class FileSystemEventRunner>
 
-  FileSystemEventRunner([this.changeSpec, this.recipe]);
+  FileSystemEventRunner([this.changeSpec, this.recipe]) {
+    id = new Id('drudge_file_system_event_runner');
+  }
 
   toString() => brCompact([
         'FileSystemEventRunner',
@@ -139,10 +151,13 @@ class FileSystemEventRunner extends Runnable {
         indentBlock(recipe.toString())
       ]);
 
-  run() {
-    super.run();
-    recipe.run();
-  }
+  Future run() async => super.run().then((Iterable results) {
+        _logger.fine(
+            "Finished FSR deps (${dependencies.length}:${results.length}), running file runner recipe $id");
+        return recipe
+            .run()
+            .then((Iterable moreResults) => concat([results, moreResults]));
+      });
 
   // end <class FileSystemEventRunner>
 
@@ -154,17 +169,19 @@ class Driver extends Runnable {
 
   // custom <class Driver>
 
-  Driver(this._fileSystemEventRunners);
+  Driver(this._fileSystemEventRunners) {
+    id = new Id('drudge_driver');
+  }
 
   toString() =>
       brCompact(['driver', indentBlock(brCompact(_fileSystemEventRunners))]);
 
-  run() {
-    super.run();
-    for (var fileSystemEventRunner in fileSystemEventRunners) {
-      fileSystemEventRunner.run();
-    }
-  }
+  Future run() async => super.run().then((Iterable results) {
+        _logger
+            .info("Finished Driver($id) deps ${results.length}, running FSRs");
+        return Future.wait(fileSystemEventRunners.map((var r) => r.run())).then(
+            (Iterable moreResults) => concat([results, concat(moreResults)]));
+      });
 
   // end <class Driver>
 
@@ -173,7 +190,8 @@ class Driver extends Runnable {
 
 // custom <library drudge>
 
-command(id) => new Command(id);
+command(id, [String exe, List<String> args = const <String>[]]) =>
+    new Command(id, exe, args);
 
 recipe(id, Iterable<Runnable> runnables,
         [ParallelPolicy parallelPolicy = ParallelPolicy.serial]) =>
