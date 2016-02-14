@@ -38,7 +38,7 @@ class Identifiable {
 class Runnable extends Object with Dependencies, Identifiable {
   // custom <class Runnable>
 
-  Future<List> run() async {
+  Future<List> run() {
     return Future
         .wait(dependencies.map((d) => d.run()))
         .then((Iterable results) {
@@ -56,7 +56,8 @@ class Command extends Runnable {
   String exe;
   List<String> args = [];
   String outputPath;
-  Directory outputDir;
+  String latestStdout;
+  String latestStderr;
   int iteration = 0;
 
   // custom <class Command>
@@ -64,7 +65,9 @@ class Command extends Runnable {
   Command(id, [this.exe, this.args = const <String>[]]) {
     this.id = getOrCreateId(id);
     outputPath = '/tmp/driver/${this.id.snake}';
-    outputDir = new Directory(outputPath)..createSync(recursive: true);
+    new Directory(outputPath)..createSync(recursive: true);
+    latestStdout = '$outputPath/latest.stdout';
+    latestStderr = '$outputPath/latest.stderr';
   }
 
   toString() => brCompact([
@@ -74,24 +77,35 @@ class Command extends Runnable {
             : brCompact(['dependencies', indentBlock(brCompact(dependencies))])
       ]);
 
-  Future run() async => super.run().then((Iterable results) {
+  Future run() => super.run().then((Iterable results) {
         _logger.info('COMMAND: ($exe ${args.join(" ")})');
         return Process.run(exe, args).then((ProcessResult processResult) {
-          final bool success = processResult.exitCode==0;
-          final fileBasename = success? ".success.stdout":".fail.stdout";
+          final bool success = processResult.exitCode == 0;
+          final fileBasename = success ? ".success.stdout" : ".fail.stdout";
           final fileName = '$outputPath/$iteration$fileBasename';
           new File(fileName).writeAsStringSync(processResult.stdout);
+          _createOrUpdateLink(latestStdout, fileName);
           _logger.fine('($exe ${args.join(" ")})\n'
               '---------------------------------\n${processResult.stdout}');
-          if(!success) {
+          if (!success) {
             final stdErrFileBasename = '$iteration.fail.stderr';
             final fileName = '$outputPath/$stdErrFileBasename';
             new File(fileName).writeAsStringSync(processResult.stderr);
+            _createOrUpdateLink(latestStderr, fileName);
           }
           iteration++;
           return new List.from(results)..add(processResult);
         });
       });
+
+  _createOrUpdateLink(linkPath, targetPath) {
+    final link = new Link(linkPath);
+    if (link.existsSync()) {
+      link.update(targetPath);
+    } else {
+      link.createSync(targetPath);
+    }
+  }
 
   // end <class Command>
 
@@ -116,7 +130,7 @@ class Recipe extends Runnable {
             : brCompact(['dependencies', indentBlock(brCompact(dependencies))])
       ]);
 
-  Future run() async => super.run().then((Iterable results) {
+  Future run() => super.run().then((Iterable results) {
         return Future
             .wait(runnables.map((var _) => _.run()))
             .then((Iterable moreResults) {
@@ -175,7 +189,7 @@ class FileSystemEventRunner extends Runnable {
         indentBlock(recipe.toString())
       ]);
 
-  Future run() async => super.run().then((Iterable results) {
+  Future run() => super.run().then((Iterable results) {
         if (results.length > 0)
           _logger.fine(
               "Finished FSR deps (${dependencies.length}:${results.length}), running file runner recipe $id");

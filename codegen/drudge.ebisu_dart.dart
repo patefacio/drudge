@@ -72,7 +72,8 @@ main(List<String> args) {
                 ..type = 'List<String>'
                 ..classInit = [],
               member('output_path')..type = 'String',
-              member('output_dir')..type = 'Directory',
+              member('latest_stdout')..type = 'String',
+              member('latest_stderr')..type = 'String',
               member('iteration')..classInit = 0,
             ],
 
