@@ -37,7 +37,7 @@ main([List<String> args]) {
       command('test', 'echo', ['TESTING', 'testing stuff now']),
     ]);
 
-    final thisFileChanging = changeSpec(FileSystemEvent.ALL, [new File(here)]);
+    final thisFileChanging = changeSpec(FileSystemEvent.ALL, [here]);
 
     var fauxBuild =
         driver([fileSystemEventRunner(thisFileChanging, buildAndTest)]);

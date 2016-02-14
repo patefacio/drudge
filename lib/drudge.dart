@@ -3,6 +3,7 @@ library drudge.drudge;
 import 'dart:async';
 import 'dart:io';
 import 'package:ebisu/ebisu.dart';
+import 'package:glob/glob.dart';
 import 'package:id/id.dart';
 import 'package:logging/logging.dart';
 import 'package:quiver/iterables.dart';
@@ -101,7 +102,7 @@ class Command extends Runnable {
   _createOrUpdateLink(linkPath, targetPath) {
     final link = new Link(linkPath);
     if (link.existsSync()) {
-      link.update(targetPath);
+      link.updateSync(targetPath);
     } else {
       link.createSync(targetPath);
     }
@@ -145,7 +146,9 @@ class Recipe extends Runnable {
 
 class ChangeSpec {
   int fileSystemEvent;
-  List<FileSystemEntity> get watchTargets => _watchTargets;
+
+  /// List of strings interpreted as type globs
+  List<String> get watchTargets => _watchTargets;
 
   // custom <class ChangeSpec>
 
@@ -161,7 +164,7 @@ class ChangeSpec {
 
   // end <class ChangeSpec>
 
-  List<FileSystemEntity> _watchTargets = [];
+  List<String> _watchTargets = [];
 }
 
 /// Runs commands on file system events
@@ -176,7 +179,10 @@ class FileSystemEventRunner extends Runnable {
 
   FileSystemEventRunner([this.changeSpec, this.recipe]) {
     id = new Id('drudge_file_system_event_runner');
-    eventStreams = changeSpec.watchTargets.map((FileSystemEntity fse) {
+
+    eventStreams = concat(changeSpec.watchTargets
+            .map((String glob) => new Glob(glob).listSync()))
+        .map((FileSystemEntity fse) {
       _logger.info(
           'Listening for events(${changeSpec.fileSystemEvent}) on ${fse.path}');
       return fse.watch(events: changeSpec.fileSystemEvent);

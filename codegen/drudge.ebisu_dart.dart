@@ -36,6 +36,7 @@ main(List<String> args) {
           'package:id/id.dart',
           'package:ebisu/ebisu.dart',
           'package:quiver/iterables.dart',
+          'package:glob/glob.dart',
           'io',
           'async',
         ]
@@ -91,7 +92,8 @@ main(List<String> args) {
             ..members = [
               member('file_system_event')..type = 'int',
               member('watch_targets')
-                ..type = 'List<FileSystemEntity>'
+                ..doc = 'List of strings interpreted as type globs'
+                ..type = 'List<String>'
                 ..classInit = []
                 ..access = RO,
             ],
