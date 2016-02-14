@@ -42,14 +42,7 @@ main([List<String> args]) {
     var fauxBuild =
         driver([fileSystemEventRunner(thisFileChanging, buildAndTest)]);
 
-    print(fauxBuild);
-
-    fauxBuild.run().then((Iterable results) {
-      if(results != null)
-        for (ProcessResult result in results) {
-          print('drudge finished ${result.stdout}');
-        }
-    });
+    fauxBuild.run();
   });
 
 // end <main>

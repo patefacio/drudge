@@ -55,11 +55,16 @@ class Runnable extends Object with Dependencies, Identifiable {
 class Command extends Runnable {
   String exe;
   List<String> args = [];
+  String outputPath;
+  Directory outputDir;
+  int iteration = 0;
 
   // custom <class Command>
 
   Command(id, [this.exe, this.args = const <String>[]]) {
     this.id = getOrCreateId(id);
+    outputPath = '/tmp/driver/${this.id.snake}';
+    outputDir = new Directory(outputPath)..createSync(recursive: true);
   }
 
   toString() => brCompact([
@@ -72,6 +77,18 @@ class Command extends Runnable {
   Future run() async => super.run().then((Iterable results) {
         _logger.info('COMMAND: ($exe ${args.join(" ")})');
         return Process.run(exe, args).then((ProcessResult processResult) {
+          final bool success = processResult.exitCode==0;
+          final fileBasename = success? ".success.stdout":".fail.stdout";
+          final fileName = '$outputPath/$iteration$fileBasename';
+          new File(fileName).writeAsStringSync(processResult.stdout);
+          _logger.fine('($exe ${args.join(" ")})\n'
+              '---------------------------------\n${processResult.stdout}');
+          if(!success) {
+            final stdErrFileBasename = '$iteration.fail.stderr';
+            final fileName = '$outputPath/$stdErrFileBasename';
+            new File(fileName).writeAsStringSync(processResult.stderr);
+          }
+          iteration++;
           return new List.from(results)..add(processResult);
         });
       });
@@ -138,16 +155,18 @@ class FileSystemEventRunner extends Runnable {
   ChangeSpec changeSpec;
   Recipe recipe;
   List<Stream<FileSystemEvent>> eventStreams = [];
+  StreamController<Iterable<ProcessResult>> streamController =
+      new StreamController<Iterable<ProcessResult>>();
 
   // custom <class FileSystemEventRunner>
 
   FileSystemEventRunner([this.changeSpec, this.recipe]) {
     id = new Id('drudge_file_system_event_runner');
-    eventStreams = changeSpec.watchTargets
-      .map((FileSystemEntity fse) {
-        _logger.info('Listening for events(${changeSpec.fileSystemEvent}) on ${fse.path}');
-        return fse.watch(events: changeSpec.fileSystemEvent);
-      }).toList();
+    eventStreams = changeSpec.watchTargets.map((FileSystemEntity fse) {
+      _logger.info(
+          'Listening for events(${changeSpec.fileSystemEvent}) on ${fse.path}');
+      return fse.watch(events: changeSpec.fileSystemEvent);
+    }).toList();
   }
 
   toString() => brCompact([
@@ -157,42 +176,45 @@ class FileSystemEventRunner extends Runnable {
       ]);
 
   Future run() async => super.run().then((Iterable results) {
-        _logger.fine(
-            "Finished FSR deps (${dependencies.length}:${results.length}), running file runner recipe $id");
+        if (results.length > 0)
+          _logger.fine(
+              "Finished FSR deps (${dependencies.length}:${results.length}), running file runner recipe $id");
         return recipe
             .run()
             .then((Iterable moreResults) => concat([results, moreResults]));
       });
 
-  _listenOnStreams() =>
+  _listenOnStreams() {
     eventStreams.forEach((Stream stream) {
-      stream.listen((_) => run());
+      stream.listen((_) =>
+          run().then((Iterable results) => streamController.add(results)));
     });
+  }
 
   // end <class FileSystemEventRunner>
 
 }
 
-class Driver extends Runnable {
+class Driver {
   List<FileSystemEventRunner> get fileSystemEventRunners =>
       _fileSystemEventRunners;
 
   // custom <class Driver>
 
-  Driver(this._fileSystemEventRunners) {
-    id = new Id('drudge_driver');
-  }
+  Driver(this._fileSystemEventRunners);
 
   toString() =>
       brCompact(['driver', indentBlock(brCompact(_fileSystemEventRunners))]);
 
-  Future run() async {
+  run() {
     _logger.info('Running $this');
-    return super.run().then((Iterable results) {
-        _logger
-            .info("Finished Driver($id) deps ${results.length}, running FSRs");
-        _fileSystemEventRunners.forEach((fser) => fser._listenOnStreams());
+
+    _fileSystemEventRunners.forEach((var fser) {
+      fser._listenOnStreams();
+      fser.streamController.stream.listen((var results) {
+        _logger.info('Driver got results $results');
       });
+    });
   }
 
   // end <class Driver>

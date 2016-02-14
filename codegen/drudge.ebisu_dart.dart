@@ -68,7 +68,12 @@ main(List<String> args) {
             ..extend = 'Runnable'
             ..members = [
               member('exe'),
-              member('args')..type = 'List<String>'..classInit = [],
+              member('args')
+                ..type = 'List<String>'
+                ..classInit = [],
+              member('output_path')..type = 'String',
+              member('output_dir')..type = 'Directory',
+              member('iteration')..classInit = 0,
             ],
 
           /// Recipe
@@ -96,12 +101,16 @@ main(List<String> args) {
             ..members = [
               member('change_spec')..type = 'ChangeSpec',
               member('recipe')..type = 'Recipe',
-              member('event_streams')..type = 'List<Stream<FileSystemEvent>>'..classInit = [],
+              member('event_streams')
+                ..type = 'List<Stream<FileSystemEvent>>'
+                ..classInit = [],
+              member('stream_controller')
+                ..type = 'StreamController<Iterable<ProcessResult>>'
+                ..classInit = 'new StreamController<Iterable<ProcessResult>>()',
             ],
 
           /// Drive the commands
           class_('driver')
-            ..extend = 'Runnable'
             ..members = [
               member('file_system_event_runners')
                 ..type = 'List<FileSystemEventRunner>'
