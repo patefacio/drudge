@@ -13,28 +13,14 @@ import 'package:quiver/iterables.dart';
 
 final _logger = new Logger('drudge');
 
-enum LoggingPolicy {
-commandStart,
-commandCompletion,
-commandAll
-}
+enum LoggingPolicy { commandStart, commandCompletion, commandAll }
 
+enum ParallelPolicy { serial, parallel, parallelConstrained }
 
-enum ParallelPolicy {
-serial,
-parallel,
-parallelConstrained
-}
-
-
-enum InterruptPolicy {
-restartCommand,
-queueCommand
-}
+enum InterruptPolicy { restartCommand, queueCommand }
 
 /// Reference to runnable that must be run before another
 class Dependencies {
-
   List<Runnable> dependencies = [];
 
   // custom <class Dependencies>
@@ -42,9 +28,7 @@ class Dependencies {
 
 }
 
-
 class Identifiable {
-
   Id id;
 
   // custom <class Identifiable>
@@ -52,9 +36,7 @@ class Identifiable {
 
 }
 
-
 class Runnable extends Object with Dependencies, Identifiable {
-
   // custom <class Runnable>
 
   Future<List> run() {
@@ -71,16 +53,14 @@ class Runnable extends Object with Dependencies, Identifiable {
 
 }
 
-
 class Command extends Runnable {
-
   String exe;
   List<String> args = [];
   String outputPath;
   String latestStdout;
   String latestStderr;
-  int iteration = 0;
-  Process process;
+  int numStarts = 0;
+  Set<Process> processes = new Set<Process>();
 
   // custom <class Command>
 
@@ -92,6 +72,8 @@ class Command extends Runnable {
     latestStderr = '$outputPath/latest.stderr';
   }
 
+  get name => id.snake;
+
   toString() => brCompact([
         'command($id)',
         dependencies.isEmpty
@@ -99,35 +81,40 @@ class Command extends Runnable {
             : brCompact(['dependencies', indentBlock(brCompact(dependencies))])
       ]);
 
-  Future run() =>
-    super.run().then((Iterable results) async {
-      _logger.info('COMMAND: ($exe ${args.join(" ")})');
-      if(process != null) {
-        _logger.info('Killing previous instance (${iteration-1}) of $id [$exe $args]');
-        process.kill();
-        process = null;
-      }
-      process = await Process.start(exe, args);
-      _logger.info('Started (${id.snake}) [ $exe, $args ]');
-      final fileBasename = '$iteration.${id.snake}';
-      iteration++;
+  Future run() => super.run().then((Iterable results) async {
+        _logger.info(
+            '$name: [$exe ${args.join(" ")}] with ${processes.length} outstanding');
+        for (Process process in processes) {
+          _logger.info('$name: Killing ${process.pid} [$exe $args]');
+          process.kill();
+        }
+        processes.clear();
+        final process = await Process.start(exe, args);
+        processes.add(process);
+        _logger.info('$name: started ${process.pid} [ $exe, $args ]');
+        final fileBasename = '$numStarts.${id.snake}';
+        numStarts++;
 
-      final stdoutFilePath = '$outputPath/$fileBasename.stdout';
-      final stdoutSink = new File(stdoutFilePath).openWrite();
-      final stderrFilePath = '$outputPath/$fileBasename.stderr';
-      final stderrSink = new File(stderrFilePath).openWrite();
-      process.stdout.pipe(stdoutSink);
-      process.stderr.pipe(stderrSink);
-      return process.exitCode.then((int exitCode) {
-        process = null;
-        _createOrUpdateLink('$outputPath/latest.stdout', stdoutFilePath);
-        _createOrUpdateLink('$outputPath/latest.stderr', stderrFilePath);
-        _logger.info('Nulled process for (${id.snake}) [ $exe, $args ]');
-        return new List.from(results)..add({
-          'command': [ exe, args ],
-          'exitCode' : exitCode });
+        final stdoutFilePath = '$outputPath/$fileBasename.stdout';
+        final stdoutSink = new File(stdoutFilePath).openWrite();
+        final stderrFilePath = '$outputPath/$fileBasename.stderr';
+        final stderrSink = new File(stderrFilePath).openWrite();
+        process.stdout.pipe(stdoutSink);
+        process.stderr.pipe(stderrSink);
+        return process.exitCode.then((int exitCode) {
+          _logger.info(
+              '$name: Completed (${process.pid}) with ($exitCode) [$exe $args]');
+          processes.remove(process);
+          _createOrUpdateLink('$outputPath/latest.stdout', stdoutFilePath);
+          _createOrUpdateLink('$outputPath/latest.stderr', stderrFilePath);
+          _logger.info('Nulled process for (${id.snake}) [ $exe, $args ]');
+          return new List.from(results)
+            ..add({
+              'command': [exe, args],
+              'exitCode': exitCode
+            });
+        });
       });
-    });
 
   _createOrUpdateLink(linkPath, targetPath) {
     final link = new Link(linkPath);
@@ -142,9 +129,7 @@ class Command extends Runnable {
 
 }
 
-
 class Recipe extends Runnable {
-
   List<Runnable> runnables = [];
   ParallelPolicy parallelPolicy;
 
@@ -176,10 +161,9 @@ class Recipe extends Runnable {
 
 }
 
-
 class ChangeSpec {
-
   int fileSystemEvent;
+
   /// List of strings interpreted as type globs
   List<String> get watchTargets => _watchTargets;
 
@@ -198,17 +182,15 @@ class ChangeSpec {
   // end <class ChangeSpec>
 
   List<String> _watchTargets = [];
-
 }
-
 
 /// Runs commands on file system events
 class FileSystemEventRunner extends Runnable {
-
   ChangeSpec changeSpec;
   Recipe recipe;
   List<Stream<FileSystemEvent>> eventStreams = [];
-  StreamController<Iterable<int>> streamController = new StreamController<Iterable<int>>();
+  StreamController<Iterable<int>> streamController =
+      new StreamController<Iterable<int>>();
 
   // custom <class FileSystemEventRunner>
 
@@ -250,10 +232,9 @@ class FileSystemEventRunner extends Runnable {
 
 }
 
-
 class Driver {
-
-  List<FileSystemEventRunner> get fileSystemEventRunners => _fileSystemEventRunners;
+  List<FileSystemEventRunner> get fileSystemEventRunners =>
+      _fileSystemEventRunners;
 
   // custom <class Driver>
 
@@ -276,7 +257,6 @@ class Driver {
   // end <class Driver>
 
   List<FileSystemEventRunner> _fileSystemEventRunners = [];
-
 }
 
 // custom <library drudge>

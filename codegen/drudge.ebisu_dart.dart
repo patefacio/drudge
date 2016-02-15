@@ -75,8 +75,8 @@ main(List<String> args) {
               member('output_path')..type = 'String',
               member('latest_stdout')..type = 'String',
               member('latest_stderr')..type = 'String',
-              member('iteration')..classInit = 0,
-              member('process')..type = 'Process',
+              member('num_starts')..classInit = 0,
+              member('processes')..type = 'Set<Process>'..classInit = 'new Set<Process>()',
             ],
 
           /// Recipe
