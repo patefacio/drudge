@@ -76,6 +76,7 @@ main(List<String> args) {
               member('latest_stdout')..type = 'String',
               member('latest_stderr')..type = 'String',
               member('iteration')..classInit = 0,
+              member('process')..type = 'Process',
             ],
 
           /// Recipe
@@ -108,8 +109,8 @@ main(List<String> args) {
                 ..type = 'List<Stream<FileSystemEvent>>'
                 ..classInit = [],
               member('stream_controller')
-                ..type = 'StreamController<Iterable<ProcessResult>>'
-                ..classInit = 'new StreamController<Iterable<ProcessResult>>()',
+                ..type = 'StreamController<Iterable<int>>'
+                ..classInit = 'new StreamController<Iterable<int>>()',
             ],
 
           /// Drive the commands
