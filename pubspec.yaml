@@ -1,21 +1,19 @@
 name: drudge
 version: 0.0.1
-author: Daniel Davidson <dbdavidson@yahoo.com>
+environment:
+  sdk: '>=1.8.2 <2.0.0'
+
 dependencies:
 
 # custom <drudge dependencies>
 
-  id: "^1.0.13"
-  ebisu: ">=0.6.14<=0.8.0"
+  id: "^1.0.15"
+  ebisu: "^0.7.4"
   glob: "^1.1.0"  
 
 # end <drudge dependencies>
 
 dev_dependencies:
-  yaml: "any"
-  browser: "any"
-  hop: "any"
-  hop_docgen: "any"
 
 # custom <drudge dev dependencies>
   test: "^0.12.0"

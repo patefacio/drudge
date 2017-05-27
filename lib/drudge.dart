@@ -11,7 +11,7 @@ import 'package:quiver/iterables.dart';
 // custom <additional imports>
 // end <additional imports>
 
-final _logger = new Logger('drudge');
+final Logger _logger = new Logger('drudge');
 
 enum LoggingPolicy { commandStart, commandCompletion, commandAll }
 

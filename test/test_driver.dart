@@ -12,12 +12,12 @@ import 'dart:io';
 
 // end <additional imports>
 
-final _logger = new Logger('test_driver');
+final Logger _logger = new Logger('test_driver');
 
 // custom <library test_driver>
 // end <library test_driver>
 
-main([List<String> args]) {
+void main([List<String> args]) {
   Logger.root.onRecord.listen(
       (LogRecord r) => print("${r.loggerName} [${r.level}]:\t${r.message}"));
   Logger.root.level = Level.OFF;
