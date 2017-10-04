@@ -20,6 +20,7 @@ main(List<String> args) {
 
   final drudge = system('drudge')
     ..rootPath = dirname(dirname(absolute(Platform.script.toFilePath())))
+    ..includesReadme = true
     ..testLibraries = [
       library('test_driver')
         ..imports = [

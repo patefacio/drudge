@@ -8,8 +8,8 @@ dependencies:
 # custom <drudge dependencies>
 
   id: "^1.0.15"
-  ebisu: "^0.7.4"
   glob: "^1.1.0"  
+  ebisu: "^0.7.9"
 
 # end <drudge dependencies>
 

@@ -7,5 +7,5 @@ void main() {
     print('${rec.level.name}: ${rec.time}: ${rec.message}');
   });
 
-  test_driver.main();
+  test_driver.main(null);
 }

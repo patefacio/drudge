@@ -142,7 +142,10 @@ class Recipe extends Runnable {
 
   toString() => brCompact([
         'recipe($id)',
-        indentBlock(brCompact([runnables, 'parallelPolicy($parallelPolicy)',])),
+        indentBlock(brCompact([
+          runnables,
+          'parallelPolicy($parallelPolicy)',
+        ])),
         dependencies.isEmpty
             ? null
             : brCompact(['dependencies', indentBlock(brCompact(dependencies))])
